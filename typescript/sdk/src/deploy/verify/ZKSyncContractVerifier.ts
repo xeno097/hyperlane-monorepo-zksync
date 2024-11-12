@@ -2,7 +2,7 @@ import fetch from 'cross-fetch';
 import { Logger } from 'pino';
 
 import { buildArtifact } from '@hyperlane-xyz/core/buildArtifact-zksync.js';
-import { rootLogger } from '@hyperlane-xyz/utils';
+import { rootLogger, sleep } from '@hyperlane-xyz/utils';
 
 import { MultiProvider } from '../../providers/MultiProvider.js';
 import { ChainName } from '../../types.js';
@@ -79,6 +79,16 @@ export class ZKSyncContractVerifier extends BaseContractVerifier {
         { verificationId },
         `Retrieved verificationId from verified ${contractType}.`,
       );
+
+      await sleep(5000);
+
+      const res = await fetch(
+        `https://zero-network.calderaexplorer.xyz/verification/contract_verification/${verificationId}`,
+      );
+
+      const body = await res.json();
+
+      console.log(body);
     } catch (error) {
       verificationLogger.debug(
         { error },
@@ -122,6 +132,8 @@ export class ZKSyncContractVerifier extends BaseContractVerifier {
       'Sending request to explorer...',
     );
 
+    console.log(options);
+
     const response = await fetch(url.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -135,6 +147,7 @@ export class ZKSyncContractVerifier extends BaseContractVerifier {
         'Parsing response from explorer...',
       );
     } catch (error) {
+      console.log(error);
       verificationLogger.trace(
         {
           failure: response.statusText,

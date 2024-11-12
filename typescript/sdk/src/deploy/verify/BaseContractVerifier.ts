@@ -80,6 +80,7 @@ export abstract class BaseContractVerifier {
     }
 
     const explorerApi = this.multiProvider.tryGetExplorerApi(chain);
+    console.log(explorerApi);
     if (!explorerApi) {
       verificationLogger.debug('No explorer API set, skipping');
       return false;

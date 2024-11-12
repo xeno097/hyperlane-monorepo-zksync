@@ -6,6 +6,7 @@ import { ChainMap } from '../../types.js';
 import { MultiGeneric } from '../../utils/MultiGeneric.js';
 
 import { ContractVerifier } from './ContractVerifier.js';
+import { ZKSyncContractVerifier } from './ZKSyncContractVerifier.js';
 import { BuildArtifact, CompilerOptions, VerificationInput } from './types.js';
 
 export class PostDeploymentContractVerifier extends MultiGeneric<VerificationInput> {
@@ -13,6 +14,7 @@ export class PostDeploymentContractVerifier extends MultiGeneric<VerificationInp
     module: 'PostDeploymentContractVerifier',
   });
   protected readonly contractVerifier: ContractVerifier;
+  protected readonly zkSyncVerifier: ZKSyncContractVerifier;
 
   constructor(
     verificationInputs: ChainMap<VerificationInput>,
@@ -28,6 +30,7 @@ export class PostDeploymentContractVerifier extends MultiGeneric<VerificationInp
       buildArtifact,
       licenseType,
     );
+    this.zkSyncVerifier = new ZKSyncContractVerifier(multiProvider);
   }
 
   verify(targets = this.chains()): Promise<PromiseSettledResult<void>[]> {
@@ -42,18 +45,23 @@ export class PostDeploymentContractVerifier extends MultiGeneric<VerificationInp
           return;
         }
 
+        let verifier;
+        if (family === ExplorerFamily.ZKSync) {
+          this.logger.debug(`Using Zk sync verifier`);
+          verifier = this.zkSyncVerifier;
+        } else {
+          verifier = this.contractVerifier;
+        }
+
         this.logger.debug(`Verifying ${chain}...`);
         for (const input of this.get(chain)) {
           try {
-            await this.contractVerifier.verifyContract(
-              chain,
-              input,
-              this.logger,
-            );
+            await verifier.verifyContract(chain, input, this.logger);
           } catch (error) {
             this.logger.error(
               { name: input.name, address: input.address },
               `Failed to verify contract on ${chain}`,
+              error,
             );
           }
         }
